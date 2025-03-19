@@ -63,6 +63,21 @@ export class Config {
     }
 
     /**
+     * Parse a config file content as JSONC or JSON
+     */
+    private parseConfigFile<T>(content: string): T {
+        try {
+            return parse(content) as T;
+        } catch (jsonError) {
+            try {
+                return JSON.parse(content) as T;
+            } catch {
+                throw jsonError;
+            }
+        }
+    }
+
+    /**
      * Load settings from settings.jsonc
      */
     private loadSettings(): void {
@@ -75,12 +90,10 @@ export class Config {
             }
 
             const content = Deno.readTextFileSync(configPath);
-            const parsedSettings = parse(content) as Settings;
+            const parsedSettings = this.parseConfigFile<Settings>(content);
             this.settings = { ...this.settings, ...parsedSettings };
         } catch (error: unknown) {
-            const errorMessage = error instanceof Error
-                ? error.message
-                : String(error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
             console.error(`Error loading settings: ${errorMessage}`);
         }
     }
@@ -116,32 +129,14 @@ export class Config {
 
                     try {
                         const content = Deno.readTextFileSync(botPath);
-                        let botConfig: Omit<BotConfig, "name">;
-
-                        try {
-                            botConfig = parse(content) as Omit<
-                                BotConfig,
-                                "name"
-                            >;
-                        } catch (jsonError) {
-                            try {
-                                botConfig = JSON.parse(content) as Omit<
-                                    BotConfig,
-                                    "name"
-                                >;
-                            } catch {
-                                throw jsonError;
-                            }
-                        }
+                        const botConfig = this.parseConfigFile<Omit<BotConfig, "name">>(content);
 
                         this.bots[botName] = {
                             name: botName,
                             ...botConfig,
                         };
                     } catch (error: unknown) {
-                        const errorMessage = error instanceof Error
-                            ? error.message
-                            : String(error);
+                        const errorMessage = error instanceof Error ? error.message : String(error);
                         console.error(
                             `Error loading bot config ${botName}: ${errorMessage}`,
                         );
@@ -149,9 +144,7 @@ export class Config {
                 }
             }
         } catch (error: unknown) {
-            const errorMessage = error instanceof Error
-                ? error.message
-                : String(error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
             console.error(`Error loading bots directory: ${errorMessage}`);
         }
     }
