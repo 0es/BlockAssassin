@@ -1,7 +1,7 @@
 .vscode/
 .cursor/
 
-x/*
-node_modules/*
+x/
+node_modules/
 
 *.ps1
