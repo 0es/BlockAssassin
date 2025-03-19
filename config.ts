@@ -4,7 +4,7 @@ import { join } from "@std/path";
 /**
  * Bot configuration interface
  */
-interface BotConfig {
+export interface BotConfig {
     name: string;
     identity: string;
     prompt: string;
@@ -13,9 +13,9 @@ interface BotConfig {
 /**
  * Project settings interface
  */
-interface Settings {
+export interface Settings {
     host: string;
-    port: string;
+    port: number;
     [key: string]: unknown;
 }
 
@@ -28,7 +28,7 @@ export class Config {
 
     settings: Settings = {
         host: "localhost",
-        port: "10101",
+        port: 10101,
     };
 
     bots: Record<string, BotConfig> = {};

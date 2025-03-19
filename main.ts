@@ -1,6 +1,7 @@
 import "@std/dotenv/load";
-import Server from "./src/server/index.ts";
+import config from "@/config.ts";
+import Server from "@/src/server/index.ts";
 
-const server = new Server();
+const server = new Server(config.settings);
 
-server.start();
+await server.start();

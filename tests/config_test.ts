@@ -1,7 +1,7 @@
 import { assertEquals, assertNotEquals, assertStrictEquals, assertExists } from "https://deno.land/std/assert/mod.ts";
 import { assertSpyCalls, spy, resolvesNext, stub } from "https://deno.land/std/testing/mock.ts";
 import { join } from "@std/path";
-import { Config } from "../config.ts";
+import { Config } from "@/config.ts";
 
 // Mock path for testing
 const TEST_CONFIG_DIR = join(Deno.cwd(), "test_config");
@@ -11,7 +11,7 @@ const TEST_BOTS_DIR = join(TEST_CONFIG_DIR, "bots");
 // Test fixtures
 const mockSettings = {
     host: "test-host",
-    port: "8888",
+    port: 8888,
     testOption: true
 };
 
@@ -151,7 +151,7 @@ Deno.test("Config - Error Handling - Settings File Not Found", async () => {
 
         // Should use default settings
         assertEquals(config.settings.host, "localhost");
-        assertEquals(config.settings.port, "10101");
+        assertEquals(config.settings.port, 10101);
 
         // Verify warning was logged
         assertSpyCalls(warnSpy, 1);

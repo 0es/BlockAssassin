@@ -1,18 +1,20 @@
+import { Settings } from "@/config.ts";
+
 /**
  * Server class for handling HTTP requests
  */
 class Server {
-    private port: number;
     private hostname: string;
+    private port: number;
 
     /**
      * Constructor for the Server class
      * @param port - Port number to listen on
      * @param hostname - Hostname to bind to
      */
-    constructor(port: number = 10101, hostname: string = "localhost") {
-        this.port = port;
-        this.hostname = hostname;
+    constructor(settings: Settings) {
+        this.hostname = settings.host;
+        this.port = settings.port;
     }
 
     /**
@@ -22,13 +24,13 @@ class Server {
         console.log(`Server starting on ${this.hostname}:${this.port}`);
 
         await Deno.serve(
-            { port: this.port, hostname: this.hostname },
+            { hostname: this.hostname, port: this.port },
             (request: Request) => {
                 return new Response("Minecraft AI Agent Server", {
                     status: 200,
                     headers: { "Content-Type": "text/plain" },
                 });
-            }
+            },
         );
     }
 }
