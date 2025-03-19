@@ -89,7 +89,7 @@ export class Config {
      * Load bot configurations from bots directory
      */
     private loadBots(): void {
-        const botsDir = join(Deno.cwd(), "config", "bots");
+        const botsDir = join(this.configDir, "bots");
 
         try {
             const dirExists = (() => {
