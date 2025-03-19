@@ -1,3 +1,6 @@
 import "@std/dotenv/load";
+import Server from "./src/server/index.ts";
 
-console.log('OpenTelemetry endpoint');
+const server = new Server();
+
+server.start();
