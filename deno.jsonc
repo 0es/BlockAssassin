@@ -1,13 +1,16 @@
 {
   "tasks": {
-    "dev": "deno run --unstable-otel -A --watch main.ts"
+    "dev": "deno run --unstable-worker-options --unstable-otel -A --watch main.ts"
   },
   "imports": {
     "$/": "./",
     "@/": "./src/",
+    "@oak/oak": "jsr:@oak/oak@^12.6.3",
     "@std/dotenv": "jsr:@std/dotenv@^0.225.3",
     "@std/path": "jsr:@std/path@^1.0.8",
-    "jsonc-parser": "npm:jsonc-parser@^3.3.1"
+    "jsonc-parser": "npm:jsonc-parser@^3.3.1",
+    "minecraft-data": "npm:minecraft-data@^3.84.1",
+    "mineflayer": "npm:mineflayer@^4.26.0"
   },
   "fmt": {
     "indentWidth": 4,

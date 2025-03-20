@@ -20,6 +20,16 @@ export interface Settings {
 }
 
 /**
+ * Game configuration interface
+ */
+export interface GameConfig {
+    host: string;
+    port: string;
+    player_username: string;
+    [key: string]: unknown;
+}
+
+/**
  * Config class for managing application configuration
  */
 export class Config {
@@ -32,6 +42,12 @@ export class Config {
     };
 
     bots: Record<string, BotConfig> = {};
+
+    game: GameConfig = {
+        host: "localhost",
+        port: "25565",
+        player_username: "Player",
+    };
 
     /**
      * Get singleton instance
@@ -52,6 +68,7 @@ export class Config {
 
         console.log("Settings loaded:", this.settings);
         console.log("Bots loaded:", Object.keys(this.bots));
+        console.log("Game config loaded:", this.game);
     }
 
     /**
@@ -60,6 +77,7 @@ export class Config {
     private loadConfig(): void {
         this.loadSettings();
         this.loadBots();
+        this.loadGameConfig();
     }
 
     /**
@@ -150,6 +168,27 @@ export class Config {
     }
 
     /**
+     * Load game configuration from game.jsonc
+     */
+    private loadGameConfig(): void {
+        const configPath = join(this.configDir, "game.jsonc");
+
+        try {
+            if (!Deno.statSync(configPath).isFile) {
+                console.warn("Game config file not found, using defaults");
+                return;
+            }
+
+            const content = Deno.readTextFileSync(configPath);
+            const parsedConfig = this.parseConfigFile<GameConfig>(content);
+            this.game = { ...this.game, ...parsedConfig };
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`Error loading game config: ${errorMessage}`);
+        }
+    }
+
+    /**
      * Reload all configuration
      */
     public reload(): void {
@@ -168,6 +207,13 @@ export class Config {
      */
     public getBotNames(): string[] {
         return Object.keys(this.bots);
+    }
+
+    /**
+     * Get game configuration
+     */
+    public getGameConfig(): GameConfig {
+        return this.game;
     }
 }
 

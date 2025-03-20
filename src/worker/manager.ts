@@ -53,13 +53,13 @@ export class WorkerManager {
      * Initialize workers based on configurations
      * @param configs Array of bot configurations
      */
-    public async initWorkers(configs: BotConfig[]): Promise<void> {
+    public initWorkers(configs: BotConfig[]): void {
         // Terminate any existing workers
         this.terminateAllWorkers();
 
         // Initialize workers with provided configs
         for (const config of configs) {
-            await this.initWorker(config);
+            this.initWorker(config);
         }
     }
 
@@ -68,7 +68,7 @@ export class WorkerManager {
      * @param config Bot configuration
      * @returns Success status
      */
-    public async initWorker(config: BotConfig): Promise<boolean> {
+    public initWorker(config: BotConfig): boolean {
         if (!config.name) {
             console.error("Worker initialization failed: config missing name");
             return false;
@@ -79,7 +79,7 @@ export class WorkerManager {
             this.terminateWorker(config.name);
         }
 
-        await this.createWorker(config.name, config);
+        this.createWorker(config.name, config);
         return true;
     }
 
@@ -88,7 +88,7 @@ export class WorkerManager {
      * @param name Worker name
      * @param config Bot configuration
      */
-    private async createWorker(name: string, config: BotConfig): Promise<void> {
+    private createWorker(name: string, config: BotConfig): void {
         try {
             // Create a new worker
             const worker = new Worker(this.workerModulePath, {
