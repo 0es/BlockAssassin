@@ -1,4 +1,5 @@
 import { Settings } from "@/config.ts";
+import { WorkerManager } from "@/worker/manager.ts";
 
 /**
  * Server class for handling HTTP requests
@@ -12,7 +13,7 @@ class Server {
      * @param port - Port number to listen on
      * @param hostname - Hostname to bind to
      */
-    constructor(settings: Settings) {
+    constructor(settings: Settings, workerManager: WorkerManager) {
         this.hostname = settings.host;
         this.port = settings.port;
     }
