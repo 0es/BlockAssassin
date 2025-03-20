@@ -24,7 +24,7 @@ export interface Settings {
  */
 export interface GameConfig {
     host: string;
-    port: string;
+    port: number;
     player_username: string;
     [key: string]: unknown;
 }
@@ -45,7 +45,7 @@ export class Config {
 
     game: GameConfig = {
         host: "localhost",
-        port: "25565",
+        port: 25565,
         player_username: "Player",
     };
 

@@ -43,11 +43,13 @@ function initAgent(config: BotConfig): void {
 }
 
 // Start agent processing
-function startAgent(): void {
+async function startAgent(): Promise<void> {
     if (!agent) {
         reportError("Cannot start: Agent not initialized");
         return;
     }
+
+    await agent.start();
 
     isRunning = true;
     log("Agent started");
