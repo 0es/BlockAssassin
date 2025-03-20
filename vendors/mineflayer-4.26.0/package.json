@@ -2,6 +2,7 @@
   "name": "mineflayer",
   "version": "4.26.0",
   "description": "create minecraft bots with a stable, high level API",
+  "type": "commonjs",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
@@ -37,7 +38,8 @@
     "prismarine-world": "^3.6.0",
     "protodef": "^1.18.0",
     "typed-emitter": "^1.0.0",
-    "vec3": "^0.1.7"
+    "vec3": "^0.1.7",
+    "uuid-1345": "^1.0.2"
   },
   "devDependencies": {
     "@types/node": "^22.1.0",

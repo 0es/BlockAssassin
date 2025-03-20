@@ -98,6 +98,7 @@ export class WorkerManager {
                         net: true,
                         read: true,
                         env: true,
+                        sys: true,
                     },
                 },
             });

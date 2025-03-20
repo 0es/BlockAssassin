@@ -1,5 +1,6 @@
 {
     "dependencies": {
-        "mineflayer": "file:./vendors/mineflayer-4.26.0"
+        "mineflayer": "file:./vendors/mineflayer-4.26.0",
+        "minecraft-protocol": "file:./vendors/node-minecraft-protocol-1.54.0"
     }
 }

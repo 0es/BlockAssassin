@@ -1,4 +1,4 @@
-import { Bot, createBot } from "npm:mineflayer";
+import { Bot, createBot } from "mineflayer";
 import minecraftData from "minecraft-data";
 import Config from "@/config.ts";
 
