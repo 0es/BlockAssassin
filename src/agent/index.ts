@@ -1,6 +1,6 @@
 import { BotConfig } from "@/config.ts";
 import mcManager, { MCManager } from "./mc.ts";
-// import { Bot } from "mineflayer/index.d.ts";
+import { Bot } from "mineflayer";
 
 /**
  * Agent class for Minecraft bot
@@ -8,7 +8,7 @@ import mcManager, { MCManager } from "./mc.ts";
 export class Agent {
     private botConfig: BotConfig;
     private mcManager: MCManager;
-    private bot: any | null = null;
+    private bot: Bot | null = null;
 
     /**
      * Create a new Agent instance

@@ -1,6 +1,7 @@
 import { Settings, Config } from "@/config.ts";
 import { WorkerManager } from "@/worker/manager.ts";
 import { Application, Context, Router } from "@oak/oak";
+import { logger } from "@/utils/logger.ts";
 
 /**
  * Server class for handling Minecraft AI Agent HTTP requests
@@ -67,7 +68,7 @@ class Server {
      * Start the HTTP server using Oak
      */
     public async start() {
-        console.log(`Server starting on ${this.hostname}:${this.port}`);
+        logger.info(`Server starting on ${this.hostname}:${this.port}`);
 
         await this.app.listen({
             hostname: this.hostname,

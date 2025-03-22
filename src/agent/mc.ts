@@ -1,6 +1,7 @@
 import { Bot, createBot } from "mineflayer";
 import minecraftData from "minecraft-data";
 import Config from "@/config.ts";
+import { logger } from "@/utils/logger.ts";
 
 /**
  * MCManager class for controlling agent access to Minecraft game features
@@ -50,16 +51,16 @@ export class MCManager {
 
             // Add basic error handling
             this.bot.on('error', (err: Error) => {
-                console.error('Bot error:', err);
+                logger.error('Bot error:', err);
                 reject(err);
             });
 
             this.bot.on('kicked', (reason: string) => {
-                console.log('Bot was kicked from the server for:', reason);
+                logger.info('Bot was kicked from the server for: ' + reason);
             });
 
             this.bot.on('end', () => {
-                console.log('Bot connection ended');
+                logger.info('Bot connection ended');
                 this.bot = null;
             });
         });

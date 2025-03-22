@@ -1,4 +1,5 @@
 import { BotConfig } from "@/config.ts";
+import { logger } from "@/utils/logger.ts";
 
 /**
  * Agent worker status
@@ -70,7 +71,7 @@ export class WorkerManager {
      */
     public initWorker(config: BotConfig): boolean {
         if (!config.name) {
-            console.error("Worker initialization failed: config missing name");
+            logger.error("Worker initialization failed: config missing name");
             return false;
         }
 
@@ -109,7 +110,7 @@ export class WorkerManager {
             });
 
             worker.addEventListener("error", (error) => {
-                console.error(`Worker ${name} error:`, error);
+                logger.error(`Worker ${name} error: ${error}`);
                 this.status.set(name, WorkerStatus.ERROR);
             });
 
@@ -123,9 +124,9 @@ export class WorkerManager {
                 data: config
             });
 
-            console.log(`Worker ${name} created`);
+            logger.info(`Worker ${name} created`);
         } catch (error) {
-            console.error(`Failed to create worker ${name}:`, error);
+            logger.error(`Failed to create worker ${name}: ${error}`);
             this.status.set(name, WorkerStatus.ERROR);
         }
     }
@@ -138,17 +139,17 @@ export class WorkerManager {
     private handleWorkerMessage(name: string, message: WorkerMessage): void {
         switch (message.type) {
             case WorkerMessageType.LOG:
-                console.log(`[Worker ${name}]`, message.data);
+                logger.info(`[Worker ${name}] ${message.data}`);
                 break;
             case WorkerMessageType.ERROR:
-                console.error(`[Worker ${name} ERROR]`, message.data);
+                logger.error(`[Worker ${name} ERROR] ${message.data}`);
                 this.status.set(name, WorkerStatus.ERROR);
                 break;
             case WorkerMessageType.RESULT:
-                console.log(`[Worker ${name} RESULT]`, message.data);
+                logger.info(`[Worker ${name} RESULT] ${message.data}`);
                 break;
             default:
-                console.log(`[Worker ${name} UNKNOWN]`, message);
+                logger.info(`[Worker ${name} UNKNOWN] ${message}`);
         }
     }
 
@@ -164,7 +165,7 @@ export class WorkerManager {
                 type: WorkerMessageType.START
             });
             this.status.set(name, WorkerStatus.RUNNING);
-            console.log(`Worker ${name} started`);
+            logger.info(`Worker ${name} started`);
             return true;
         }
         return false;
@@ -182,7 +183,7 @@ export class WorkerManager {
                 type: WorkerMessageType.STOP
             });
             this.status.set(name, WorkerStatus.IDLE);
-            console.log(`Worker ${name} stopped`);
+            logger.info(`Worker ${name} stopped`);
             return true;
         }
         return false;
@@ -199,7 +200,7 @@ export class WorkerManager {
             worker.terminate();
             this.workers.delete(name);
             this.status.set(name, WorkerStatus.TERMINATED);
-            console.log(`Worker ${name} terminated`);
+            logger.info(`Worker ${name} terminated`);
             return true;
         }
         return false;
