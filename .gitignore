@@ -4,4 +4,7 @@
 x/
 node_modules/
 
+.env
+
 *.ps1
+*.pem

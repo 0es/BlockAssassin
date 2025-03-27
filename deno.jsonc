@@ -1,20 +1,23 @@
 {
   "tasks": {
-    "dev": "deno run --unstable-worker-options --unstable-otel -A --watch main.ts"
+    "dev": "deno run --unstable-worker-options --unstable-otel -A --watch main.ts",
+    "ws-example": "deno run -A examples/websocket-client-example.ts"
   },
   "imports": {
     "$/": "./",
     "@/": "./src/",
     "@oak/oak": "jsr:@oak/oak@^12.6.3",
     "@std/dotenv": "jsr:@std/dotenv@^0.225.3",
+    "@std/encoding": "jsr:@std/encoding@^1.0.7",
     "@std/path": "jsr:@std/path@^1.0.8",
     "jsonc-parser": "npm:jsonc-parser@^3.3.1",
-    "minecraft-data": "npm:minecraft-data@^3.84.1"
+    "minecraft-data": "npm:minecraft-data@^3.84.1",
+    "ws": "npm:ws@8.13.0"
   },
-  "nodeModulesDir": "manual",
+  "nodeModulesDir": "auto",
   "fmt": {
     "indentWidth": 4,
-    "lineWidth": 120,
+    "lineWidth": 140,
     "useTabs": false
   }
 }
