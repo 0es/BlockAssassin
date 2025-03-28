@@ -14,7 +14,7 @@
     "minecraft-data": "npm:minecraft-data@^3.84.1",
     "ws": "npm:ws@8.13.0"
   },
-  "nodeModulesDir": "auto",
+  "nodeModulesDir": "manual",
   "fmt": {
     "indentWidth": 4,
     "lineWidth": 140,

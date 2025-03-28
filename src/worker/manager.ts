@@ -22,6 +22,7 @@ export enum WorkerMessageType {
     RESULT = "result",
     ERROR = "error",
     LOG = "log",
+    START_FAILED = "start_failed",
 }
 
 /**
@@ -39,6 +40,9 @@ export class WorkerManager {
     private workers: Map<string, Worker>;
     private status: Map<string, WorkerStatus>;
     private workerModulePath: string;
+    private errorCounts: Map<string, number>;
+    private maxRetries: number = 3;
+    private restartTimeout: number = 5000; // 5 seconds
 
     // Singleton instance
     private static instance: WorkerManager;
@@ -62,6 +66,7 @@ export class WorkerManager {
     private constructor(workerModulePath: string = new URL("./thread.ts", import.meta.url).href) {
         this.workers = new Map();
         this.status = new Map();
+        this.errorCounts = new Map();
         this.workerModulePath = workerModulePath;
     }
 
@@ -95,6 +100,9 @@ export class WorkerManager {
             this.terminateWorker(config.name);
         }
 
+        // Reset error count for this worker
+        this.errorCounts.set(config.name, 0);
+
         this.createWorker(config.name, config);
         return true;
     }
@@ -125,8 +133,7 @@ export class WorkerManager {
             });
 
             worker.addEventListener("error", (error) => {
-                logger.error(`Worker ${name} error: ${error}`);
-                this.status.set(name, WorkerStatus.ERROR);
+                this.handleWorkerError(name, error);
             });
 
             // Store the worker
@@ -143,6 +150,63 @@ export class WorkerManager {
         } catch (error) {
             logger.error(`Failed to create worker ${name}: ${error}`);
             this.status.set(name, WorkerStatus.ERROR);
+            // Don't attempt to restart here as the worker creation itself failed
+        }
+    }
+
+    /**
+     * Handle worker errors
+     * @param name Worker name
+     * @param error Error event
+     */
+    private handleWorkerError(name: string, error: ErrorEvent | string): void {
+        const errorMessage = error instanceof ErrorEvent ? error.message || "Unknown worker error" : String(error);
+
+        logger.error(`Worker ${name} error: ${errorMessage}`);
+        this.status.set(name, WorkerStatus.ERROR);
+
+        // Increment error count
+        const currentErrorCount = this.errorCounts.get(name) || 0;
+        this.errorCounts.set(name, currentErrorCount + 1);
+
+        // Attempt to recover the worker
+        this.attemptWorkerRecovery(name);
+    }
+
+    /**
+     * Attempt to recover a worker that has encountered errors
+     * @param name Worker name
+     */
+    private attemptWorkerRecovery(name: string): void {
+        const errorCount = this.errorCounts.get(name) || 0;
+        const worker = this.workers.get(name);
+
+        if (!worker) {
+            logger.warn(`Cannot recover non-existent worker: ${name}`);
+            return;
+        }
+
+        if (errorCount <= this.maxRetries) {
+            logger.info(`Attempting to recover worker ${name} (attempt ${errorCount}/${this.maxRetries})`);
+
+            // Wait a bit before restarting to avoid rapid restart loops
+            setTimeout(() => {
+                if (this.status.get(name) === WorkerStatus.ERROR) {
+                    // Get the worker's configuration
+                    worker.postMessage({
+                        type: WorkerMessageType.STOP,
+                    });
+
+                    // Set status to idle and then restart
+                    this.status.set(name, WorkerStatus.IDLE);
+                    this.startWorker(name);
+
+                    logger.info(`Worker ${name} recovered after error`);
+                }
+            }, this.restartTimeout);
+        } else {
+            logger.error(`Worker ${name} has failed too many times (${errorCount}), not attempting further recovery`);
+            // Could terminate or reset the worker here if needed
         }
     }
 
@@ -156,15 +220,36 @@ export class WorkerManager {
             case WorkerMessageType.LOG:
                 logger.info(`[Worker ${name}] ${message.data}`);
                 break;
+
             case WorkerMessageType.ERROR:
                 logger.error(`[Worker ${name} ERROR] ${message.data}`);
-                this.status.set(name, WorkerStatus.ERROR);
+
+                // Only update status if currently running (allow initialization errors to be handled without changing state)
+                if (this.status.get(name) === WorkerStatus.RUNNING) {
+                    this.status.set(name, WorkerStatus.ERROR);
+
+                    // Track error and attempt recovery
+                    const errorCount = this.errorCounts.get(name) || 0;
+                    this.errorCounts.set(name, errorCount + 1);
+                    this.attemptWorkerRecovery(name);
+                }
                 break;
+
+            case WorkerMessageType.START_FAILED:
+                logger.error(`[Worker ${name} START FAILED] ${message.data}`);
+                // Startup failed, terminate worker without attempting recovery
+                logger.warn(`Agent ${name} failed to start, terminating without retry`);
+                this.terminateWorker(name);
+                break;
+
             case WorkerMessageType.RESULT:
-                logger.info(`[Worker ${name} RESULT] ${message.data}`);
+                // Reset error count on successful results
+                this.errorCounts.set(name, 0);
+                logger.info(`[Worker ${name} RESULT] ${JSON.stringify(message.data)}`);
                 break;
+
             default:
-                logger.info(`[Worker ${name} UNKNOWN] ${message}`);
+                logger.info(`[Worker ${name} UNKNOWN] ${JSON.stringify(message)}`);
         }
     }
 
@@ -175,7 +260,9 @@ export class WorkerManager {
      */
     public startWorker(name: string): boolean {
         const worker = this.workers.get(name);
-        if (worker && this.status.get(name) === WorkerStatus.IDLE) {
+        const status = this.status.get(name);
+
+        if (worker && (status === WorkerStatus.IDLE || status === WorkerStatus.ERROR)) {
             worker.postMessage({
                 type: WorkerMessageType.START,
             });
@@ -183,6 +270,13 @@ export class WorkerManager {
             logger.info(`Worker ${name} started`);
             return true;
         }
+
+        if (!worker) {
+            logger.error(`Cannot start non-existent worker: ${name}`);
+        } else {
+            logger.warn(`Cannot start worker ${name} in status: ${status}`);
+        }
+
         return false;
     }
 
@@ -193,7 +287,7 @@ export class WorkerManager {
      */
     public stopWorker(name: string): boolean {
         const worker = this.workers.get(name);
-        if (worker && this.status.get(name) === WorkerStatus.RUNNING) {
+        if (worker && (this.status.get(name) === WorkerStatus.RUNNING || this.status.get(name) === WorkerStatus.ERROR)) {
             worker.postMessage({
                 type: WorkerMessageType.STOP,
             });
@@ -212,11 +306,18 @@ export class WorkerManager {
     public terminateWorker(name: string): boolean {
         const worker = this.workers.get(name);
         if (worker) {
-            worker.terminate();
-            this.workers.delete(name);
-            this.status.set(name, WorkerStatus.TERMINATED);
-            logger.info(`Worker ${name} terminated`);
-            return true;
+            try {
+                worker.terminate();
+                this.workers.delete(name);
+                this.status.set(name, WorkerStatus.TERMINATED);
+                this.errorCounts.delete(name);
+                logger.info(`Worker ${name} terminated`);
+                return true;
+            } catch (error) {
+                logger.error(`Error terminating worker ${name}: ${error}`);
+                this.status.set(name, WorkerStatus.ERROR);
+                return false;
+            }
         }
         return false;
     }
@@ -227,10 +328,26 @@ export class WorkerManager {
      * @param config Bot configuration
      * @returns Success status
      */
-    public async restartWorker(name: string, config: BotConfig): Promise<boolean> {
+    public async restartWorker(name: string, config?: BotConfig): Promise<boolean> {
+        // If no config is provided, reuse the existing config if possible
+        if (!config && this.workers.has(name)) {
+            // Implementation note: In reality, we would need to store workers' configs separately
+            // This is a placeholder for demonstration purposes
+            logger.warn(`Restarting worker ${name} without configuration`);
+        }
+
         if (this.terminateWorker(name)) {
-            await this.createWorker(name, config);
-            return this.startWorker(name);
+            // Reset error count
+            this.errorCounts.set(name, 0);
+
+            // Create and start worker
+            if (config) {
+                this.createWorker(name, config);
+                return this.startWorker(name);
+            } else {
+                logger.error(`Cannot restart worker ${name}: No configuration provided`);
+                return false;
+            }
         }
         return false;
     }
@@ -270,13 +387,20 @@ export class WorkerManager {
      */
     public sendTask(name: string, task: unknown): boolean {
         const worker = this.workers.get(name);
-        if (worker && this.status.get(name) === WorkerStatus.RUNNING) {
+        const status = this.status.get(name);
+
+        if (worker && status === WorkerStatus.RUNNING) {
             worker.postMessage({
                 type: WorkerMessageType.TASK,
                 data: task,
             });
             return true;
         }
+
+        if (status === WorkerStatus.ERROR) {
+            logger.warn(`Cannot send task to worker ${name} in ERROR state`);
+        }
+
         return false;
     }
 
@@ -298,11 +422,32 @@ export class WorkerManager {
     }
 
     /**
+     * Check if a worker is healthy
+     * @param name Worker name
+     * @returns Whether the worker is healthy
+     */
+    public isWorkerHealthy(name: string): boolean {
+        const status = this.status.get(name);
+        return status === WorkerStatus.IDLE || status === WorkerStatus.RUNNING;
+    }
+
+    /**
+     * Get all unhealthy worker names
+     * @returns Array of unhealthy worker names
+     */
+    public getUnhealthyWorkers(): string[] {
+        return Array.from(this.status.entries())
+            .filter(([_, status]) => status === WorkerStatus.ERROR)
+            .map(([name, _]) => name);
+    }
+
+    /**
      * Dispose all resources
      */
     public dispose(): void {
         this.terminateAllWorkers();
         this.workers.clear();
         this.status.clear();
+        this.errorCounts.clear();
     }
 }

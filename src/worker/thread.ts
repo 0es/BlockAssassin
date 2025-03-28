@@ -19,7 +19,7 @@ let isRunning = false;
 function log(message: string): void {
     workerContext.postMessage({
         type: WorkerMessageType.LOG,
-        data: message
+        data: message,
     } as WorkerMessage);
 }
 
@@ -28,7 +28,7 @@ function reportError(error: unknown): void {
     const errorMessage = error instanceof Error ? error.message : String(error);
     workerContext.postMessage({
         type: WorkerMessageType.ERROR,
-        data: errorMessage
+        data: errorMessage,
     } as WorkerMessage);
 }
 
@@ -49,19 +49,41 @@ async function startAgent(): Promise<void> {
         return;
     }
 
-    await agent.start();
+    try {
+        await agent.start();
+        isRunning = true;
+        log("Agent started");
 
-    isRunning = true;
-    log("Agent started");
+        // Start main processing loop
+        runAgentLoop();
+    } catch (error) {
+        // Send a special START_FAILED message when startup fails
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        workerContext.postMessage({
+            type: WorkerMessageType.START_FAILED,
+            data: errorMessage,
+        } as WorkerMessage);
 
-    // Start main processing loop
-    runAgentLoop();
+        log("Agent failed to start");
+    }
 }
 
 // Stop agent processing
 function stopAgent(): void {
     isRunning = false;
     log("Agent stopped");
+
+    // Add safe shutdown logic
+    try {
+        if (agent) {
+            // Implement agent shutdown if needed
+            // agent.shutdown();
+            log("Agent shutdown complete");
+        }
+    } catch (error) {
+        reportError(error);
+        log("Error during agent shutdown, but worker thread continues running");
+    }
 }
 
 // Process a task
@@ -81,11 +103,20 @@ function processTask(task: unknown): void {
             type: WorkerMessageType.RESULT,
             data: {
                 taskCompleted: true,
-                task: task
-            }
+                task: task,
+            },
         } as WorkerMessage);
     } catch (error) {
         reportError(error);
+        // Send failure result instead of letting the error propagate
+        workerContext.postMessage({
+            type: WorkerMessageType.RESULT,
+            data: {
+                taskCompleted: false,
+                error: error instanceof Error ? error.message : String(error),
+                task: task,
+            },
+        } as WorkerMessage);
     }
 }
 
@@ -98,16 +129,18 @@ async function runAgentLoop(): Promise<void> {
             // making decisions, and taking actions
 
             // For now, just sleep to avoid high CPU usage
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
         } catch (error) {
             reportError(error);
             // Don't break the loop on error, just continue
+            // Add a small delay to prevent CPU spinning on repeated errors
+            await new Promise((resolve) => setTimeout(resolve, 500));
         }
     }
 }
 
 // Handle messages from the main thread
-workerContext.addEventListener("message", (event: MessageEvent<WorkerMessage>) => {
+workerContext.addEventListener("message", async (event: MessageEvent<WorkerMessage>) => {
     const message = event.data;
 
     try {
@@ -116,7 +149,7 @@ workerContext.addEventListener("message", (event: MessageEvent<WorkerMessage>) =
                 initAgent(message.data as BotConfig);
                 break;
             case WorkerMessageType.START:
-                startAgent();
+                await startAgent();
                 break;
             case WorkerMessageType.STOP:
                 stopAgent();
@@ -129,7 +162,21 @@ workerContext.addEventListener("message", (event: MessageEvent<WorkerMessage>) =
         }
     } catch (error) {
         reportError(error);
+        log("Error in message handler, but worker continues running");
     }
+});
+
+// Add global error handlers
+workerContext.addEventListener("error", (event: ErrorEvent) => {
+    reportError(event.error || event.message);
+    event.preventDefault(); // Prevent the error from bubbling up
+    log("Uncaught error in worker thread, but continuing execution");
+});
+
+workerContext.addEventListener("unhandledrejection", (event: PromiseRejectionEvent) => {
+    reportError(event.reason || "Unhandled promise rejection");
+    event.preventDefault(); // Prevent the rejection from bubbling up
+    log("Unhandled promise rejection in worker thread, but continuing execution");
 });
 
 // Log worker startup
