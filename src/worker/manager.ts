@@ -8,7 +8,7 @@ export enum WorkerStatus {
     IDLE = "idle",
     RUNNING = "running",
     ERROR = "error",
-    TERMINATED = "terminated"
+    TERMINATED = "terminated",
 }
 
 /**
@@ -21,7 +21,7 @@ export enum WorkerMessageType {
     TASK = "task",
     RESULT = "result",
     ERROR = "error",
-    LOG = "log"
+    LOG = "log",
 }
 
 /**
@@ -40,11 +40,26 @@ export class WorkerManager {
     private status: Map<string, WorkerStatus>;
     private workerModulePath: string;
 
+    // Singleton instance
+    private static instance: WorkerManager;
+
+    /**
+     * Get the WorkerManager instance
+     * @param workerModulePath Optional path to the worker module
+     * @returns WorkerManager instance
+     */
+    public static getInstance(workerModulePath?: string): WorkerManager {
+        if (!WorkerManager.instance) {
+            WorkerManager.instance = new WorkerManager(workerModulePath);
+        }
+        return WorkerManager.instance;
+    }
+
     /**
      * Create a new WorkerManager
      * @param workerModulePath Path to the worker module
      */
-    constructor(workerModulePath: string = new URL("./thread.ts", import.meta.url).href) {
+    private constructor(workerModulePath: string = new URL("./thread.ts", import.meta.url).href) {
         this.workers = new Map();
         this.status = new Map();
         this.workerModulePath = workerModulePath;
@@ -121,7 +136,7 @@ export class WorkerManager {
             // Initialize the worker with configuration
             worker.postMessage({
                 type: WorkerMessageType.INIT,
-                data: config
+                data: config,
             });
 
             logger.info(`Worker ${name} created`);
@@ -162,7 +177,7 @@ export class WorkerManager {
         const worker = this.workers.get(name);
         if (worker && this.status.get(name) === WorkerStatus.IDLE) {
             worker.postMessage({
-                type: WorkerMessageType.START
+                type: WorkerMessageType.START,
             });
             this.status.set(name, WorkerStatus.RUNNING);
             logger.info(`Worker ${name} started`);
@@ -180,7 +195,7 @@ export class WorkerManager {
         const worker = this.workers.get(name);
         if (worker && this.status.get(name) === WorkerStatus.RUNNING) {
             worker.postMessage({
-                type: WorkerMessageType.STOP
+                type: WorkerMessageType.STOP,
             });
             this.status.set(name, WorkerStatus.IDLE);
             logger.info(`Worker ${name} stopped`);
@@ -258,7 +273,7 @@ export class WorkerManager {
         if (worker && this.status.get(name) === WorkerStatus.RUNNING) {
             worker.postMessage({
                 type: WorkerMessageType.TASK,
-                data: task
+                data: task,
             });
             return true;
         }
