@@ -17,6 +17,14 @@ export interface BotConfig {
 export interface Settings {
     host: string;
     port: number;
+    websocket?: {
+        host: string;
+        port: number;
+        pem?: {
+            serverPublicKey: string;
+            clientPrivateKey: string;
+        };
+    };
     [key: string]: unknown;
 }
 

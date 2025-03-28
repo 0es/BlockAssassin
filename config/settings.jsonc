@@ -1,4 +1,12 @@
 {
     "host": "localhost",
-    "port": 10101
+    "port": 10101,
+    "websocket": {
+        "host": "localhost",
+        "port": 8889,
+        "pem": {
+            "serverPublicKey": "./ba_server_public.pem",
+            "clientPrivateKey": "./ba_client_private.pem"
+        }
+    }
 }

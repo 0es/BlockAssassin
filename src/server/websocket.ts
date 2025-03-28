@@ -63,13 +63,13 @@ export class WebSocketClient {
         const config = Config.getInstance();
 
         // Build WebSocket server URL
-        const serverHost = Deno.env.get("SERVER_WS_HOST") || "localhost";
-        const serverPort = parseInt(Deno.env.get("SERVER_WS_PORT") || "8888");
+        const serverHost = config.settings.websocket?.host || "localhost";
+        const serverPort = config.settings.websocket?.port || 8888;
         this.serverUrl = `ws://${serverHost}:${serverPort}`;
 
         // Initialize encryptor
-        const publicKeyPath = Deno.env.get("RSA_PUBLIC_KEY_PATH") || "./ba_server_public.pem";
-        const privateKeyPath = Deno.env.get("RSA_PRIVATE_KEY_PATH") || "./ba_client_private.pem";
+        const publicKeyPath = config.settings.websocket?.pem?.serverPublicKey || "./ba_server_public.pem";
+        const privateKeyPath = config.settings.websocket?.pem?.clientPrivateKey || "./ba_client_private.pem";
 
         this.encryptor = new ClientMessageEncryptor(
             "RSA",
