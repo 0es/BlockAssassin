@@ -18,6 +18,17 @@ enum ConnectionState {
     ERROR = "error",
 }
 
+// WebSocket close codes, matching server-side codes
+export enum WebSocketCloseCode {
+    NORMAL_CLOSURE = 1000,
+    SERVER_SHUTDOWN = 1001,
+    INTERNAL_ERROR = 1011,
+    MAX_CONNECTIONS_REACHED = 1013,
+    AUTH_ERROR = 4000, // Authentication errors (token invalid, format error, missing claims, etc.)
+    CONNECTION_TIMEOUT = 4001, // Connection timed out (no messages received)
+    DUPLICATE_CONNECTION = 4002, // User connected from another device/session
+}
+
 // WebSocket event handlers type definitions
 type MessageHandler = (message: any) => void;
 type ConnectionHandler = () => void;
@@ -135,7 +146,7 @@ export class WebSocketClient {
 
         if (this.socket) {
             try {
-                this.socket.close(1000, reason);
+                this.socket.close(WebSocketCloseCode.NORMAL_CLOSURE, reason);
             } catch (error) {
                 logger.error("Error while closing WebSocket connection", error as Error);
             }
@@ -325,10 +336,19 @@ export class WebSocketClient {
         this.state = ConnectionState.DISCONNECTED;
         this.triggerCloseHandlers(event.code, event.reason);
 
-        // Attempt reconnect for non-intentional disconnects
-        if (event.code !== 1000) {
-            this.reconnect();
+        // Do not attempt to reconnect for normal closure or authentication errors
+        if (
+            event.code === WebSocketCloseCode.NORMAL_CLOSURE ||
+            event.code === WebSocketCloseCode.AUTH_ERROR
+        ) {
+            logger.info(
+                `No reconnect attempt: ${event.code === WebSocketCloseCode.NORMAL_CLOSURE ? "Normal closure" : "Authentication error"}`,
+            );
+            return;
         }
+
+        // Attempt reconnect for other non-intentional disconnects
+        this.reconnect();
     }
 
     // Attempt to reconnect to the server

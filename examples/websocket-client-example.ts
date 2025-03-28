@@ -8,8 +8,7 @@ import { WebSocketClient } from "@/server/websocket.ts";
 import { logger } from "@/utils/logger.ts";
 
 // 设置认证令牌（通常通过认证流程获取）
-const authToken =
-    "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJibG9jay1hc3Nhc3Npbi1zZXJ2ZXIiLCJzdWIiOiI0MTVlOGM4ZC0yZDNlLTQwZmQtOGE2MC1jNTNkYjFmMTZiN2QiLCJleHAiOjE3NDMxMzI1MTIsInJvbGUiOiJhZG1pbiIsInR5cGUiOiJ3c19hY2Nlc3MifQ.kUNhkK1ZpfosH8NfUCCPKSkWXcSovOzS39PhhuKASIUnWEf_DCTG73Bh4mbw9aAGoGOJH8mfyobrUoWiSgHqsQ";
+const authToken = "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJibG9jay1hc3Nhc3Npbi1zZXJ2ZXIiLCJzdWIiOiI0MTVlOGM4ZC0yZDNlLTQwZmQtOGE2MC1jNTNkYjFmMTZiN2QiLCJleHAiOjE3NDMyNTUwMDUsInJvbGUiOiJhZG1pbiIsInR5cGUiOiJ3c19hY2Nlc3MifQ.G2pnyhob8hxx76TPKFOdxUwwB0CoPTZ7jL-1EpxOgNuVx4Ms0TTeGl3EmNfa0jqStp_hld_Q_FamfJivHTl9hA"
 
 // 启动示例
 async function startExample() {
