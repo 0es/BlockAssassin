@@ -3,6 +3,7 @@
  *
  * 这个示例演示如何使用WebSocket客户端连接到服务器。
  */
+import "@std/dotenv/load";
 import { WebSocketClient } from "@/server/websocket.ts";
 import { logger } from "@/utils/logger.ts";
 

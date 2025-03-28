@@ -52,8 +52,8 @@ export class WebSocketClient {
         const config = Config.getInstance();
 
         // Build WebSocket server URL
-        const serverHost = Deno.env.get("SERVER_HOST") || "localhost";
-        const serverPort = parseInt(Deno.env.get("SERVER_PORT") || "8888");
+        const serverHost = Deno.env.get("SERVER_WS_HOST") || "localhost";
+        const serverPort = parseInt(Deno.env.get("SERVER_WS_PORT") || "8888");
         this.serverUrl = `ws://${serverHost}:${serverPort}`;
 
         // Initialize encryptor
