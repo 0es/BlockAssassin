@@ -120,10 +120,10 @@ export class WebSocketClient {
             this.socket = new WebSocket(this.serverUrl);
 
             // Set up event handlers
-            this.socket.onopen = this.handleOpen.bind(this);
-            this.socket.onmessage = this.handleMessage.bind(this);
-            this.socket.onerror = this.handleError.bind(this);
-            this.socket.onclose = this.handleClose.bind(this);
+            this.socket.addEventListener("open", this.handleOpen.bind(this));
+            this.socket.addEventListener("message", this.handleMessage.bind(this));
+            this.socket.addEventListener("error", this.handleError.bind(this));
+            this.socket.addEventListener("close", this.handleClose.bind(this));
 
             return true;
         } catch (error) {
@@ -416,13 +416,12 @@ export class WebSocketClient {
                 const truncatedMsg = message.length > 100 ? message.substring(0, 100) + "..." : message;
                 logger.debug(`Sending raw data: ${truncatedMsg}`);
 
-                this.socket!.send(message, (error?: Error) => {
-                    if (error) {
-                        reject(error);
-                    } else {
-                        resolve();
-                    }
-                });
+                try {
+                    this.socket!.send(message);
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
             } catch (error) {
                 reject(error);
             }
