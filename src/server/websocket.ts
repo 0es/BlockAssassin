@@ -380,7 +380,8 @@ export class WebSocketClient {
     // Send message to the server (encrypts the message)
     public async send(message: any): Promise<void> {
         if (this.state !== ConnectionState.AUTHENTICATED || !this.socket) {
-            throw new Error("Cannot send message: Not authenticated");
+            logger.error("Terminate sending message: Not authenticated or connection not established");
+            return;
         }
 
         try {

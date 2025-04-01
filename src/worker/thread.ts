@@ -1,3 +1,4 @@
+/// <reference lib="deno.worker" />
 import { BotConfig } from "@/config.ts";
 import { Agent } from "@/agent/index.ts";
 import { WorkerMessage, WorkerMessageType } from "./manager.ts";
@@ -8,8 +9,7 @@ import { WorkerMessage, WorkerMessageType } from "./manager.ts";
  */
 
 // Define self for Deno Worker context
-// deno-lint-ignore no-explicit-any
-const workerContext = self as any;
+const workerContext = self;
 
 // Current agent instance
 let agent: Agent | null = null;
@@ -35,7 +35,7 @@ function reportError(error: unknown): void {
 // Initialize agent
 function initAgent(config: BotConfig): void {
     try {
-        agent = new Agent(config);
+        agent = new Agent(workerContext, config);
         log(`Agent initialized with config: ${config.name}`);
     } catch (error) {
         reportError(error);
@@ -129,7 +129,7 @@ async function runAgentLoop(): Promise<void> {
             // making decisions, and taking actions
 
             // For now, just sleep to avoid high CPU usage
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await agent?.mainLoop();
         } catch (error) {
             reportError(error);
             // Don't break the loop on error, just continue

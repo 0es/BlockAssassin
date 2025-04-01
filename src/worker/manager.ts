@@ -1,5 +1,6 @@
 import { BotConfig } from "@/config.ts";
 import { logger } from "@/utils/logger.ts";
+import gameService from "@/server/game.ts";
 
 /**
  * Agent worker status
@@ -18,19 +19,28 @@ export enum WorkerMessageType {
     INIT = "init",
     START = "start",
     STOP = "stop",
-    TASK = "task",
-    RESULT = "result",
     ERROR = "error",
     LOG = "log",
     START_FAILED = "start_failed",
+
+    // send to agent
+    TASK = "task",
+    RESULT = "result",
+
+    // receive from agent
+    SEND = "send",
 }
 
 /**
  * Worker message interface
  */
-export interface WorkerMessage {
-    type: WorkerMessageType;
-    data?: unknown;
+export type WorkerMessage =
+    | { type: WorkerMessageType.SEND; data: WorkerSendData }
+    | { type: Exclude<WorkerMessageType, WorkerMessageType.SEND>; data?: unknown };
+
+export interface WorkerSendData {
+    type: string;
+    [key: string]: unknown;
 }
 
 /**
@@ -246,6 +256,11 @@ export class WorkerManager {
                 // Reset error count on successful results
                 this.errorCounts.set(name, 0);
                 logger.info(`[Worker ${name} RESULT] ${JSON.stringify(message.data)}`);
+                break;
+
+            case WorkerMessageType.SEND:
+                gameService.sendBotMessage(name, message.data);
+                logger.info(`[Worker ${name} SEND] ${message.data.type}`);
                 break;
 
             default:

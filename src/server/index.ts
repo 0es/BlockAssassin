@@ -1,5 +1,7 @@
 import { WorkerManager } from "@/worker/manager.ts";
 import { WebSocketClient } from "@/server/websocket.ts";
+import "./game-listener.ts";
+import "./game-messager.ts";
 import { GameService } from "@/server/game.ts";
 import { Application, Context, Router } from "@oak/oak";
 import { logger } from "@/utils/logger.ts";
@@ -10,7 +12,8 @@ import config from "@/config.ts";
  * Uses Oak framework for routing and middleware
  */
 
-const TEST_Token = "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJibG9jay1hc3Nhc3Npbi1zZXJ2ZXIiLCJzdWIiOiI0MTVlOGM4ZC0yZDNlLTQwZmQtOGE2MC1jNTNkYjFmMTZiN2QiLCJleHAiOjE3NDMyNTUwMDUsInJvbGUiOiJhZG1pbiIsInR5cGUiOiJ3c19hY2Nlc3MifQ.G2pnyhob8hxx76TPKFOdxUwwB0CoPTZ7jL-1EpxOgNuVx4Ms0TTeGl3EmNfa0jqStp_hld_Q_FamfJivHTl9hA"
+const TEST_Token =
+    "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJibG9jay1hc3Nhc3Npbi1zZXJ2ZXIiLCJzdWIiOiI0MTVlOGM4ZC0yZDNlLTQwZmQtOGE2MC1jNTNkYjFmMTZiN2QiLCJleHAiOjE3NDM1ODc5NjcsInJvbGUiOiJhZG1pbiIsInR5cGUiOiJ3c19hY2Nlc3MifQ._s3oHUAhb7E8jkZaDb3L9_3gtbMLhXV8REwXGnS3uW8xIXoU0Q4byrGPv_V3ku19sWstQX-i8kO9AAF94qcawg";
 
 class Server {
     private hostname: string;
@@ -52,7 +55,7 @@ class Server {
 
             ctx.response.body = {
                 status: "success",
-                message: "Agent task started"
+                message: "Agent task started",
             };
             ctx.response.type = "application/json";
         });
@@ -80,6 +83,9 @@ class Server {
         this.webSocketClient.onMessage((message) => {
             logger.info(`received message: ${JSON.stringify(message)}`);
         });
+        this.webSocketClient.onClose(() => {
+            this.workerManager.stopAllWorkers();
+        });
 
         this.gameService.registerMessageHandlers();
     }
@@ -91,7 +97,7 @@ class Server {
         logger.info(`Server starting on ${this.hostname}:${this.port}`);
         this.app.listen({
             hostname: this.hostname,
-            port: this.port
+            port: this.port,
         });
 
         await this.webSocketClient.connect();
