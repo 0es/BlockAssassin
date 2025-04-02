@@ -1,7 +1,8 @@
 import { BotConfig } from "@/config.ts";
 import mcManager from "./mc.ts";
 import { Bot } from "mineflayer";
-import { WorkerMessage, WorkerMessageType } from "@/worker/manager.ts";
+import { WorkerMessageType } from "@/worker/manager.ts";
+import { GameSentMessage } from "@/game/index.ts";
 
 /**
  * Agent class for Minecraft bot
@@ -40,14 +41,18 @@ export class Agent {
     private syncHUDInfo() {
         const hudInfo = this.mcManager.headsUpDisplay();
 
-        hudInfo && this.workerContext.postMessage({
+        hudInfo && this.sendMessage("botHUDSync", {
+            hudStr: hudInfo.hudStr,
+        });
+    }
+
+    public sendMessage(type: string, data: GameSentMessage["data"]) {
+        this.workerContext.postMessage({
             type: WorkerMessageType.SEND,
             data: {
-                type: "botHUDSync",
-                data: {
-                    hudStr: hudInfo.hudStr,
-                },
+                type,
+                data,
             },
-        } as WorkerMessage);
+        });
     }
 }

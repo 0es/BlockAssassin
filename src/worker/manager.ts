@@ -1,6 +1,6 @@
 import { BotConfig } from "@/config.ts";
 import { logger } from "@/utils/logger.ts";
-import gameService from "@/server/game.ts";
+import gameService, { GameSentMessage } from "@/game/index.ts";
 
 /**
  * Agent worker status
@@ -35,13 +35,8 @@ export enum WorkerMessageType {
  * Worker message interface
  */
 export type WorkerMessage =
-    | { type: WorkerMessageType.SEND; data: WorkerSendData }
+    | { type: WorkerMessageType.SEND; data: GameSentMessage }
     | { type: Exclude<WorkerMessageType, WorkerMessageType.SEND>; data?: unknown };
-
-export interface WorkerSendData {
-    type: string;
-    [key: string]: unknown;
-}
 
 /**
  * Manages multiple agent workers
@@ -343,7 +338,7 @@ export class WorkerManager {
      * @param config Bot configuration
      * @returns Success status
      */
-    public async restartWorker(name: string, config?: BotConfig): Promise<boolean> {
+    public restartWorker(name: string, config?: BotConfig): boolean {
         // If no config is provided, reuse the existing config if possible
         if (!config && this.workers.has(name)) {
             // Implementation note: In reality, we would need to store workers' configs separately

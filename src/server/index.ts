@@ -1,8 +1,8 @@
 import { WorkerManager } from "@/worker/manager.ts";
 import { WebSocketClient } from "@/server/websocket.ts";
-import "./game-listener.ts";
-import "./game-messager.ts";
-import { GameService } from "@/server/game.ts";
+import "@/game/listener.ts";
+import "@/game/messager.ts";
+import { GameService } from "@/game/index.ts";
 import { Application, Context, Router } from "@oak/oak";
 import { logger } from "@/utils/logger.ts";
 import config from "@/config.ts";
@@ -100,7 +100,7 @@ class Server {
             port: this.port,
         });
 
-        await this.webSocketClient.connect();
+        this.webSocketClient.connect();
     }
 }
 

@@ -3,8 +3,23 @@
  * Handles game-related WebSocket messages and game state management.
  */
 import { logger } from "@/utils/logger.ts";
-import { WebSocketClient } from "./websocket.ts";
-import { WorkerSendData } from "@/worker/manager.ts";
+import { WebSocketClient } from "../server/websocket.ts";
+
+export enum GameReceivedMessageType {
+    BOTS_INIT = "botsInit",
+}
+
+export enum GameSentMessageType {
+    BOT_HUDSYNC = "botHUDSync",
+}
+export type GameReceivedMessage = {
+    type: GameReceivedMessageType;
+    data: Record<string, unknown> | unknown[];
+};
+export type GameSentMessage = {
+    type: GameSentMessageType;
+    data: Record<string, unknown> | unknown[];
+};
 
 /**
  * Game Service class
@@ -29,10 +44,16 @@ export class GameService {
         return GameService.instance;
     }
 
-    public async sendBotMessage(bot: string, data: WorkerSendData) {
+    public async sendBotMessage(bot: string, data: GameSentMessage) {
         const dataType = data.type;
+        const dataContent = data.data;
 
         switch (dataType) {
+            case GameSentMessageType.BOT_HUDSYNC: {
+                const syncData = dataContent as { hudStr: string };
+                await this.handleBotHUDSync(bot, syncData.hudStr);
+                break;
+            }
             default:
                 await this.wsClient.send({ type: dataType, data: { bot, ...(data.data || {}) } });
         }
@@ -45,21 +66,23 @@ export class GameService {
     }
 
     // Handle incoming WebSocket messages
-    private async handleMessage(message: any): Promise<void> {
+    private async handleMessage(message: GameReceivedMessage): Promise<void> {
         // Check if the message is a game-related message
         if (!message || !message.type) {
             return;
         }
 
-        logger.debug(`Game Service: Handling message type: ${message.type}`);
+        const messageType = message.type;
+        const messageData = message.data;
 
-        switch (message.type) {
-            case "botsInit":
-                await this.handleBotsInit(message);
+        logger.debug(`Game Service: Handling message type: ${messageType}`);
+
+        switch (messageType) {
+            case GameReceivedMessageType.BOTS_INIT:
+                await this.handleBotsInit(messageData as { name: string }[]);
                 break;
-            // Add more message type handlers here
             default:
-                logger.debug(`Game Service: Unhandled message type: ${message.type}`);
+                logger.debug(`Game Service: Unhandled message type: ${messageType}`);
                 break;
         }
     }

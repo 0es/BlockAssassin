@@ -6,6 +6,7 @@ import { WebSocket } from "ws";
 import { logger } from "@/utils/logger.ts";
 import { Config } from "@/config.ts";
 import { ClientMessageEncryptor } from "@/utils/crypto.ts";
+import { GameReceivedMessage } from "@/game/index.ts";
 
 // WebSocket connection states
 enum ConnectionState {
@@ -29,8 +30,10 @@ export enum WebSocketCloseCode {
     DUPLICATE_CONNECTION = 4002, // User connected from another device/session
 }
 
+export type ReceivedMessage = GameReceivedMessage;
+
 // WebSocket event handlers type definitions
-type MessageHandler = (message: any) => void;
+type MessageHandler = (message: GameReceivedMessage) => void;
 type ConnectionHandler = () => void;
 type ErrorHandler = (error: Error) => void;
 type CloseHandler = (code: number, reason: string) => void;
@@ -95,7 +98,7 @@ export class WebSocketClient {
     }
 
     // Connect to WebSocket server
-    public async connect(): Promise<boolean> {
+    public connect(): boolean {
         const invalidStates = [
             ConnectionState.CONNECTED,
             ConnectionState.CONNECTING,
@@ -376,8 +379,8 @@ export class WebSocketClient {
         this.reconnectTimeout = setTimeout(() => this.connect(), delay);
     }
 
-    // Send message to the server (encrypts the message)
-    public async send(message: any): Promise<void> {
+    // Send message to the server
+    public send(message: any): Promise<void> {
         // Log message type before sending
         const msgType = typeof message === "object" && message.type ? message.type : "unknown";
         logger.debug(`Sending message type: ${msgType}`);
@@ -387,7 +390,7 @@ export class WebSocketClient {
         return this.sendRaw(jsonMessage);
     }
 
-    // Send raw message to the server (with encryption)
+    // Send raw message to the server
     private async sendRaw(message: string): Promise<void> {
         if (!this.socket) {
             throw new Error("Cannot send message: No WebSocket connection");
@@ -433,7 +436,7 @@ export class WebSocketClient {
     }
 
     // Trigger message handlers
-    private triggerMessageHandlers(message: any): void {
+    private triggerMessageHandlers(message: GameReceivedMessage): void {
         for (const handler of this.messageHandlers) {
             try {
                 handler(message);
