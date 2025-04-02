@@ -378,54 +378,38 @@ export class WebSocketClient {
 
     // Send message to the server (encrypts the message)
     public async send(message: any): Promise<void> {
-        if (!this.socket) {
-            logger.error("Terminate sending message: connection not established");
-            return;
-        }
+        // Log message type before sending
+        const msgType = typeof message === "object" && message.type ? message.type : "unknown";
+        logger.debug(`Sending message type: ${msgType}`);
 
-        try {
-            // Convert message to string if needed
-            const messageStr = typeof message === "string" ? message : JSON.stringify(message);
-
-            // Log outgoing message
-            if (typeof message === "object") {
-                const msgType = message.type || "unknown";
-                logger.debug(`Sending message type: ${msgType}`);
-            }
-
-            // Encrypt message
-            const encryptedMessage = await this.encryptor.encrypt(messageStr);
-
-            // Send encrypted message
-            await this.sendRaw(encryptedMessage);
-        } catch (error) {
-            logger.error("Failed to send message", error as Error);
-            throw error;
-        }
+        // Convert message to JSON string
+        const jsonMessage = JSON.stringify(message);
+        return this.sendRaw(jsonMessage);
     }
 
-    // Send raw message to the server (without encryption)
+    // Send raw message to the server (with encryption)
     private async sendRaw(message: string): Promise<void> {
         if (!this.socket) {
             throw new Error("Cannot send message: No WebSocket connection");
         }
 
-        return new Promise((resolve, reject) => {
-            try {
-                // Log raw message for debugging (only first 100 chars)
-                const truncatedMsg = message.length > 100 ? message.substring(0, 100) + "..." : message;
-                logger.debug(`Sending raw data: ${truncatedMsg}`);
+        try {
+            // Log raw message for debugging (only first 100 chars)
+            const truncatedMsg = message.length > 100 ? message.substring(0, 100) + "..." : message;
+            logger.debug(`Sending raw data: ${truncatedMsg}`);
 
-                try {
-                    this.socket!.send(message);
-                    resolve();
-                } catch (error) {
-                    reject(error);
-                }
-            } catch (error) {
-                reject(error);
-            }
-        });
+            // Encrypt message
+            const encryptedMessage = await this.encryptor.encrypt(message);
+
+            // Log encrypted size
+            logger.debug(`Encrypted message size: ${encryptedMessage.length} bytes`);
+
+            // Send via WebSocket
+            this.socket.send(encryptedMessage);
+        } catch (error) {
+            logger.error("Failed to send message", error as Error);
+            throw error;
+        }
     }
 
     // Register message handler
