@@ -13,7 +13,7 @@ import config from "@/config.ts";
  */
 
 const TEST_Token =
-    "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJibG9jay1hc3Nhc3Npbi1zZXJ2ZXIiLCJzdWIiOiI0MTVlOGM4ZC0yZDNlLTQwZmQtOGE2MC1jNTNkYjFmMTZiN2QiLCJleHAiOjE3NDM1ODc5NjcsInJvbGUiOiJhZG1pbiIsInR5cGUiOiJ3c19hY2Nlc3MifQ._s3oHUAhb7E8jkZaDb3L9_3gtbMLhXV8REwXGnS3uW8xIXoU0Q4byrGPv_V3ku19sWstQX-i8kO9AAF94qcawg";
+    "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJibG9jay1hc3Nhc3Npbi1zZXJ2ZXIiLCJzdWIiOiI0MTVlOGM4ZC0yZDNlLTQwZmQtOGE2MC1jNTNkYjFmMTZiN2QiLCJleHAiOjE3NDM2OTg1NjQsInJvbGUiOiJhZG1pbiIsInR5cGUiOiJ3c19hY2Nlc3MifQ.pMkkl0DowfkEX9aBhFYKJxroueUxydLGJhm9cHMdoeiLLEK3EPSy0sPbFn4gO7udBY9iY7v1TNFhixthXtxNMg";
 
 class Server {
     private hostname: string;

@@ -65,7 +65,7 @@ export class WebSocketClient {
         // Build WebSocket server URL
         const serverHost = config.settings.websocket?.host || "localhost";
         const serverPort = config.settings.websocket?.port || 8888;
-        this.serverUrl = `ws://${serverHost}:${serverPort}`;
+        this.serverUrl = `ws://${serverHost}:${serverPort}/ws`;
 
         // Initialize encryptor
         const publicKeyPath = config.settings.websocket?.pem?.serverPublicKey || "./ba_server_public.pem";
@@ -117,7 +117,7 @@ export class WebSocketClient {
             logger.info(`Connecting to WebSocket server: ${this.serverUrl}`);
 
             // Create WebSocket connection
-            this.socket = new WebSocket(this.serverUrl);
+            this.socket = new WebSocket(this.serverUrl, undefined, { followRedirects: true });
 
             // Set up event handlers
             this.socket.addEventListener("open", this.handleOpen.bind(this));
