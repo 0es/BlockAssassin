@@ -192,12 +192,11 @@ export class WebSocketClient {
                     platform: Deno.build?.os || "unknown",
                     arch: Deno.build?.arch || "unknown",
                     hostname: Deno.hostname?.() || "unknown",
-                    userAgent: "BlockAssassin Agent",
                     timestamp: new Date().toISOString(),
                 },
             };
 
-            await this.sendRaw(JSON.stringify(authMessage));
+            await this.send(authMessage);
             logger.info("Authentication message sent with client info");
         } catch (error) {
             logger.error("Failed to send authentication message", error as Error);
@@ -379,8 +378,8 @@ export class WebSocketClient {
 
     // Send message to the server (encrypts the message)
     public async send(message: any): Promise<void> {
-        if (this.state !== ConnectionState.AUTHENTICATED || !this.socket) {
-            logger.error("Terminate sending message: Not authenticated or connection not established");
+        if (!this.socket) {
+            logger.error("Terminate sending message: connection not established");
             return;
         }
 
