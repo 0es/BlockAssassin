@@ -2,6 +2,8 @@ import { parse } from "npm:jsonc-parser";
 import { join } from "@std/path";
 import { logger } from "@/utils/logger.ts";
 
+const configLogger = logger.withPrefix("Config");
+
 /**
  * Bot configuration interface
  */
@@ -75,9 +77,9 @@ export class Config {
         this.configDir = configDir;
         this.loadConfig();
 
-        logger.info("Settings loaded: " + JSON.stringify(this.settings));
-        logger.info("Bots loaded: " + Object.keys(this.bots));
-        logger.info("Game config loaded: " + JSON.stringify(this.game));
+        configLogger.info("Settings loaded: " + JSON.stringify(this.settings));
+        configLogger.info("Bots loaded: " + Object.keys(this.bots));
+        configLogger.info("Game config loaded: " + JSON.stringify(this.game));
     }
 
     /**
@@ -112,7 +114,7 @@ export class Config {
 
         try {
             if (!Deno.statSync(configPath).isFile) {
-                logger.warn("Settings file not found, using defaults");
+                configLogger.warn("Settings file not found, using defaults");
                 return;
             }
 
@@ -121,7 +123,7 @@ export class Config {
             this.settings = { ...this.settings, ...parsedSettings };
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
-            logger.error(`Error loading settings: ${errorMessage}`);
+            configLogger.error(`Error loading settings: ${errorMessage}`);
         }
     }
 
@@ -141,7 +143,7 @@ export class Config {
             })();
 
             if (!dirExists) {
-                logger.warn("Bots directory not found");
+                configLogger.warn("Bots directory not found");
                 return;
             }
 
@@ -164,7 +166,7 @@ export class Config {
                         };
                     } catch (error: unknown) {
                         const errorMessage = error instanceof Error ? error.message : String(error);
-                        logger.error(
+                        configLogger.error(
                             `Error loading bot config ${botName}: ${errorMessage}`,
                         );
                     }
@@ -172,7 +174,7 @@ export class Config {
             }
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
-            logger.error(`Error loading bots directory: ${errorMessage}`);
+            configLogger.error(`Error loading bots directory: ${errorMessage}`);
         }
     }
 
@@ -184,7 +186,7 @@ export class Config {
 
         try {
             if (!Deno.statSync(configPath).isFile) {
-                logger.warn("Game config file not found, using defaults");
+                configLogger.warn("Game config file not found, using defaults");
                 return;
             }
 
@@ -193,7 +195,7 @@ export class Config {
             this.game = { ...this.game, ...parsedConfig };
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
-            logger.error(`Error loading game config: ${errorMessage}`);
+            configLogger.error(`Error loading game config: ${errorMessage}`);
         }
     }
 
@@ -201,11 +203,12 @@ export class Config {
      * Reload all configuration
      */
     public reload(): void {
+        configLogger.info("Reloading configuration");
         this.loadConfig();
     }
 
     /**
-     * Get a specific bot configuration
+     * Get bot configuration by name
      */
     public getBot(name: string): BotConfig | undefined {
         return this.bots[name];
@@ -226,5 +229,5 @@ export class Config {
     }
 }
 
-// Export default instance for easy import
+// Create and export default config instance
 export default Config.getInstance();

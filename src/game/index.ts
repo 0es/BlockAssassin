@@ -5,6 +5,8 @@
 import { logger } from "@/utils/logger.ts";
 import { WebSocketClient } from "../server/websocket.ts";
 
+const gameLogger = logger.withPrefix("Game Service");
+
 export enum GameReceivedMessageType {
     BOTS_INIT = "botsInit",
 }
@@ -60,7 +62,7 @@ export class GameService {
     // Register WebSocket message handlers
     public registerMessageHandlers(): void {
         this.wsClient.onMessage(this.handleMessage.bind(this));
-        logger.info("Game Service: WebSocket message handlers registered");
+        gameLogger.info("WebSocket message handlers registered");
     }
 
     // Handle incoming WebSocket messages
@@ -73,14 +75,14 @@ export class GameService {
         const messageType = message.type;
         const messageData = message.data;
 
-        logger.debug(`Game Service: Handling message type: ${messageType}`);
+        gameLogger.debug(`Handling message type: ${messageType}`);
 
         switch (messageType) {
             case GameReceivedMessageType.BOTS_INIT:
                 await this.handleBotsInit(messageData as { name: string }[]);
                 break;
             default:
-                logger.debug(`Game Service: Unhandled message type: ${messageType}`);
+                gameLogger.debug(`Unhandled message type: ${messageType}`);
                 break;
         }
     }

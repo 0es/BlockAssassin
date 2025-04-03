@@ -7,6 +7,8 @@ import { Application, Context, Router } from "@oak/oak";
 import { logger } from "@/utils/logger.ts";
 import config from "@/config.ts";
 
+const serverLogger = logger.withPrefix("Server");
+
 /**
  * Server class for handling Minecraft AI Agent HTTP requests
  * Uses Oak framework for routing and middleware
@@ -81,7 +83,7 @@ class Server {
     private setupWebSocket() {
         this.webSocketClient.setAuthToken(TEST_Token);
         this.webSocketClient.onMessage((message) => {
-            logger.info(`received message: ${JSON.stringify(message)}`);
+            serverLogger.info(`received message: ${JSON.stringify(message)}`);
         });
         this.webSocketClient.onClose(() => {
             this.workerManager.stopAllWorkers();
@@ -94,7 +96,7 @@ class Server {
      * Start the HTTP server using Oak
      */
     public async start() {
-        logger.info(`Server starting on ${this.hostname}:${this.port}`);
+        serverLogger.info(`Server starting on ${this.hostname}:${this.port}`);
         this.app.listen({
             hostname: this.hostname,
             port: this.port,

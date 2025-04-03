@@ -7,6 +7,8 @@
 import { decodeBase64, encodeBase64 } from "@std/encoding";
 import { logger } from "./logger.ts";
 
+const cryptoLogger = logger.withPrefix("Crypto");
+
 /**
  * Supported encryption algorithms
  */
@@ -46,7 +48,7 @@ export class RsaKeyManager {
             const fileContent = await Deno.readTextFile(filePath);
             return fileContent.trim();
         } catch (error) {
-            logger.error(`Failed to read PEM file: ${filePath}`, error as Error);
+            cryptoLogger.error(`Failed to read PEM file: ${filePath}`, error as Error);
             throw new Error(`Failed to read PEM file: ${filePath}`);
         }
     }
@@ -60,14 +62,14 @@ export class RsaKeyManager {
         try {
             // Read keys from files if paths are provided
             if (serverPublicKeyPath) {
-                logger.info(`Reading server RSA public key from file: ${serverPublicKeyPath}`);
+                cryptoLogger.info(`Reading server RSA public key from file: ${serverPublicKeyPath}`);
                 const pubKeyPem = await this.readPemFile(serverPublicKeyPath);
                 this.serverPublicKeyPem = pubKeyPem;
                 this.serverPublicKey = await this.importPublicKey(pubKeyPem);
             }
 
             if (clientPrivateKeyPath) {
-                logger.info(`Reading client RSA private key from file: ${clientPrivateKeyPath}`);
+                cryptoLogger.info(`Reading client RSA private key from file: ${clientPrivateKeyPath}`);
                 const privKeyPem = await this.readPemFile(clientPrivateKeyPath);
                 this.clientPrivateKeyPem = privKeyPem;
                 this.clientPrivateKey = await this.importPrivateKey(privKeyPem);
@@ -75,12 +77,12 @@ export class RsaKeyManager {
 
             this.initialized = true;
             if (this.serverPublicKey || this.clientPrivateKey) {
-                logger.info("RSA key manager initialized successfully with provided keys");
+                cryptoLogger.info("RSA key manager initialized successfully with provided keys");
             } else {
-                logger.info("No RSA keys provided for initialization");
+                cryptoLogger.info("No RSA keys provided for initialization");
             }
         } catch (error) {
-            logger.error("RSA key manager initialization failed", error as Error);
+            cryptoLogger.error("RSA key manager initialization failed", error as Error);
             throw error;
         }
     }
@@ -111,7 +113,7 @@ export class RsaKeyManager {
                 ["encrypt"],
             );
         } catch (error) {
-            logger.error("Failed to import RSA public key", error as Error);
+            cryptoLogger.error("Failed to import RSA public key", error as Error);
             throw error;
         }
     }
@@ -142,7 +144,7 @@ export class RsaKeyManager {
                 ["decrypt"],
             );
         } catch (error) {
-            logger.error("Failed to import RSA private key", error as Error);
+            cryptoLogger.error("Failed to import RSA private key", error as Error);
             throw error;
         }
     }
@@ -198,9 +200,9 @@ export class ClientMessageEncryptor {
             this.algorithm = EncryptionAlgorithm.RSA;
         } else if (algorithm === "NONE") {
             this.algorithm = EncryptionAlgorithm.NONE;
-            logger.warn("Using no encryption (NONE) - This should only be used for development!");
+            cryptoLogger.warn("Using no encryption (NONE) - This should only be used for development!");
         } else {
-            logger.error(`Unsupported encryption algorithm: ${algorithm}, defaulting to RSA`);
+            cryptoLogger.error(`Unsupported encryption algorithm: ${algorithm}, defaulting to RSA`);
             this.algorithm = EncryptionAlgorithm.RSA;
         }
 
@@ -223,19 +225,19 @@ export class ClientMessageEncryptor {
             // Load keys if available
             try {
                 this.serverPublicKey = await keyManager.getServerPublicKey();
-                logger.info("Server public key loaded successfully");
+                cryptoLogger.info("Server public key loaded successfully");
             } catch (error) {
-                logger.warn("Server public key not available, encryption may not work");
+                cryptoLogger.warn("Server public key not available, encryption may not work");
             }
 
             try {
                 this.clientPrivateKey = await keyManager.getClientPrivateKey();
-                logger.info("Client private key loaded successfully");
+                cryptoLogger.info("Client private key loaded successfully");
             } catch (error) {
-                logger.warn("Client private key not available, decryption may not work");
+                cryptoLogger.warn("Client private key not available, decryption may not work");
             }
         } catch (error) {
-            logger.error("Failed to initialize RSA keys", error as Error);
+            cryptoLogger.error("Failed to initialize RSA keys", error as Error);
             throw error;
         }
     }
@@ -301,7 +303,7 @@ export class ClientMessageEncryptor {
             // Convert to Base64
             return encodeBase64(new Uint8Array(encryptedKey));
         } catch (error) {
-            logger.error("Failed to encrypt AES key with RSA", error as Error);
+            cryptoLogger.error("Failed to encrypt AES key with RSA", error as Error);
             throw error;
         }
     }
@@ -325,7 +327,7 @@ export class ClientMessageEncryptor {
 
             return new Uint8Array(decryptedKey);
         } catch (error) {
-            logger.error("Failed to decrypt AES key with RSA", error as Error);
+            cryptoLogger.error("Failed to decrypt AES key with RSA", error as Error);
             throw error;
         }
     }
@@ -372,7 +374,7 @@ export class ClientMessageEncryptor {
 
             return new Uint8Array(encryptedData);
         } catch (error) {
-            logger.error("Failed to encrypt with AES", error as Error);
+            cryptoLogger.error("Failed to encrypt with AES", error as Error);
             throw error;
         }
     }
@@ -406,7 +408,7 @@ export class ClientMessageEncryptor {
 
             return new Uint8Array(decryptedData);
         } catch (error) {
-            logger.error("Failed to decrypt with AES", error as Error);
+            cryptoLogger.error("Failed to decrypt with AES", error as Error);
             throw error;
         }
     }
@@ -435,7 +437,7 @@ export class ClientMessageEncryptor {
             // Convert to JSON string
             return JSON.stringify(encryptedMessage);
         } catch (error) {
-            logger.error("Hybrid encryption failed", error as Error);
+            cryptoLogger.error("Hybrid encryption failed", error as Error);
             throw error;
         }
     }
@@ -468,7 +470,7 @@ export class ClientMessageEncryptor {
             const decoder = new TextDecoder();
             return decoder.decode(decryptedData);
         } catch (error) {
-            logger.error("Hybrid decryption failed", error as Error);
+            cryptoLogger.error("Hybrid decryption failed", error as Error);
             throw error;
         }
     }
