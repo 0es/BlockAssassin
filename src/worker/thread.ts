@@ -35,7 +35,7 @@ function reportError(error: unknown): void {
 // Initialize agent
 function initAgent(config: BotConfig): void {
     try {
-        agent = new Agent(workerContext, config);
+        agent = new Agent(config);
         log(`Agent initialized with config: ${config.name}`);
     } catch (error) {
         reportError(error);
@@ -76,8 +76,7 @@ function stopAgent(): void {
     // Add safe shutdown logic
     try {
         if (agent) {
-            // Implement agent shutdown if needed
-            // agent.shutdown();
+            agent.stop();
             log("Agent shutdown complete");
         }
     } catch (error) {

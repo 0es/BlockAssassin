@@ -49,11 +49,9 @@ export class GameService {
         const dataContent = data.data;
 
         switch (dataType) {
-            case GameSentMessageType.BOT_HUDSYNC: {
-                const syncData = dataContent as { hudStr: string };
-                await this.handleBotHUDSync(bot, syncData.hudStr);
+            case GameSentMessageType.BOT_HUDSYNC:
+                await this.handleBotHUDSync(bot, (dataContent as { hudStr: string }).hudStr);
                 break;
-            }
             default:
                 await this.wsClient.send({ type: dataType, data: { bot, ...(data.data || {}) } });
         }

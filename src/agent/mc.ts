@@ -1,7 +1,7 @@
 import { Bot, createBot } from "mineflayer";
 import minecraftData from "minecraft-data";
 import Config from "@/config.ts";
-import { logger } from "@/utils/logger.ts";
+import logger from "./lib/logger.ts";
 import * as world from "./lib/world.ts";
 
 interface HUD {

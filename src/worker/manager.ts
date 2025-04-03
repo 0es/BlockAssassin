@@ -1,5 +1,5 @@
 import { BotConfig } from "@/config.ts";
-import { logger } from "@/utils/logger.ts";
+import { logger, LogLevel } from "@/utils/logger.ts";
 import gameService, { GameSentMessage } from "@/game/index.ts";
 
 /**
@@ -36,6 +36,7 @@ export enum WorkerMessageType {
  */
 export type WorkerMessage =
     | { type: WorkerMessageType.SEND; data: GameSentMessage }
+    | { type: WorkerMessageType.LOG; logLevel: LogLevel; data: string }
     | { type: Exclude<WorkerMessageType, WorkerMessageType.SEND>; data?: unknown };
 
 /**
@@ -223,11 +224,31 @@ export class WorkerManager {
     private handleWorkerMessage(name: string, message: WorkerMessage): void {
         switch (message.type) {
             case WorkerMessageType.LOG:
-                logger.info(`[Worker ${name}] ${message.data}`);
+                if ("logLevel" in message) {
+                    switch (message.logLevel) {
+                        case LogLevel.DEBUG:
+                            logger.debug(`[Worker ${name}] ${message.data}`);
+                            break;
+                        case LogLevel.INFO:
+                            logger.info(`[Worker ${name}] ${message.data}`);
+                            break;
+                        case LogLevel.WARN:
+                            logger.warn(`[Worker ${name}] ${message.data}`);
+                            break;
+                        case LogLevel.ERROR:
+                            logger.error(`[Worker ${name}] ${message.data}`);
+                            break;
+                        default:
+                            logger.info(`[Worker ${name}] ${message.data}`);
+                            break;
+                    }
+                } else {
+                    logger.info(`[Worker ${name}] ${message.data}`);
+                }
                 break;
 
             case WorkerMessageType.ERROR:
-                logger.error(`[Worker ${name} ERROR] ${message.data}`);
+                logger.error(`[Worker ${name}] [ERROR] ${message.data}`);
 
                 // Only update status if currently running (allow initialization errors to be handled without changing state)
                 if (this.status.get(name) === WorkerStatus.RUNNING) {
@@ -241,7 +262,7 @@ export class WorkerManager {
                 break;
 
             case WorkerMessageType.START_FAILED:
-                logger.error(`[Worker ${name} START FAILED] ${message.data}`);
+                logger.error(`[Worker ${name}] [START FAILED] ${message.data}`);
                 // Startup failed, terminate worker without attempting recovery
                 logger.warn(`Agent ${name} failed to start, terminating without retry`);
                 this.terminateWorker(name);
@@ -250,16 +271,16 @@ export class WorkerManager {
             case WorkerMessageType.RESULT:
                 // Reset error count on successful results
                 this.errorCounts.set(name, 0);
-                logger.info(`[Worker ${name} RESULT] ${JSON.stringify(message.data)}`);
+                logger.info(`[Worker ${name}] [RESULT] ${JSON.stringify(message.data)}`);
                 break;
 
             case WorkerMessageType.SEND:
                 gameService.sendBotMessage(name, message.data);
-                logger.info(`[Worker ${name} SEND] ${message.data.type}`);
+                logger.info(`[Worker ${name}] [SEND] ${message.data.type}`);
                 break;
 
             default:
-                logger.info(`[Worker ${name} UNKNOWN] ${JSON.stringify(message)}`);
+                logger.info(`[Worker ${name}] [UNKNOWN] ${JSON.stringify(message)}`);
         }
     }
 
