@@ -81,8 +81,6 @@ export class WebSocketClient {
             publicKeyPath,
             privateKeyPath,
         );
-
-        wsLogger.info(`WebSocket client initialized with server URL: ${this.serverUrl}`);
     }
 
     // Get singleton instance
@@ -129,6 +127,8 @@ export class WebSocketClient {
             this.socket.addEventListener("message", this.handleMessage.bind(this));
             this.socket.addEventListener("error", this.handleError.bind(this));
             this.socket.addEventListener("close", this.handleClose.bind(this));
+
+            wsLogger.info(`WebSocket client connected to server URL: ${this.serverUrl}`);
 
             return true;
         } catch (error) {

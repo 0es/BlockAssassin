@@ -77,9 +77,9 @@ export class Config {
         this.configDir = configDir;
         this.loadConfig();
 
-        configLogger.info("Settings loaded: " + JSON.stringify(this.settings));
-        configLogger.info("Bots loaded: " + Object.keys(this.bots));
-        configLogger.info("Game config loaded: " + JSON.stringify(this.game));
+        configLogger.debug("Settings loaded: " + JSON.stringify(this.settings));
+        configLogger.debug("Bots loaded: " + Object.keys(this.bots));
+        configLogger.debug("Game config loaded: " + JSON.stringify(this.game));
     }
 
     /**
