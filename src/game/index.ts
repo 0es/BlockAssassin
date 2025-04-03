@@ -89,5 +89,3 @@ export class GameService {
 
     // Additional game service methods can be added here
 }
-
-export default GameService.getInstance();

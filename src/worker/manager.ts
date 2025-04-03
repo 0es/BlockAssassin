@@ -1,6 +1,6 @@
 import { BotConfig } from "@/config.ts";
 import { logger, LogLevel } from "@/utils/logger.ts";
-import gameService, { GameSentMessage } from "@/game/index.ts";
+import { GameSentMessage, GameService } from "@/game/index.ts";
 
 const workerLogger = logger.withPrefix("Worker Manager");
 
@@ -277,7 +277,7 @@ export class WorkerManager {
                 break;
 
             case WorkerMessageType.SEND:
-                gameService.sendBotMessage(name, message.data);
+                GameService.getInstance().sendBotMessage(name, message.data);
                 logger.info(`[Worker ${name}] [SEND] ${message.data.type}`);
                 break;
 
