@@ -2,6 +2,8 @@ import { BotConfig } from "@/config.ts";
 import { logger, LogLevel } from "@/utils/logger.ts";
 import gameService, { GameSentMessage } from "@/game/index.ts";
 
+const workerLogger = logger.withPrefix("Worker Manager");
+
 /**
  * Agent worker status
  */
@@ -97,7 +99,7 @@ export class WorkerManager {
      */
     public initWorker(config: BotConfig): boolean {
         if (!config.name) {
-            logger.error("Worker initialization failed: config missing name");
+            workerLogger.error("Worker initialization failed: config missing name");
             return false;
         }
 
@@ -152,9 +154,9 @@ export class WorkerManager {
                 data: config,
             });
 
-            logger.info(`Worker ${name} created`);
+            workerLogger.info(`Worker ${name} created`);
         } catch (error) {
-            logger.error(`Failed to create worker ${name}: ${error}`);
+            workerLogger.error(`Failed to create worker ${name}: ${error}`);
             this.status.set(name, WorkerStatus.ERROR);
             // Don't attempt to restart here as the worker creation itself failed
         }
@@ -168,7 +170,7 @@ export class WorkerManager {
     private handleWorkerError(name: string, error: ErrorEvent | string): void {
         const errorMessage = error instanceof ErrorEvent ? error.message || "Unknown worker error" : String(error);
 
-        logger.error(`Worker ${name} error: ${errorMessage}`);
+        workerLogger.error(`Worker ${name} error: ${errorMessage}`);
         this.status.set(name, WorkerStatus.ERROR);
 
         // Increment error count
@@ -188,12 +190,12 @@ export class WorkerManager {
         const worker = this.workers.get(name);
 
         if (!worker) {
-            logger.warn(`Cannot recover non-existent worker: ${name}`);
+            workerLogger.warn(`Cannot recover non-existent worker: ${name}`);
             return;
         }
 
         if (errorCount <= this.maxRetries) {
-            logger.info(`Attempting to recover worker ${name} (attempt ${errorCount}/${this.maxRetries})`);
+            workerLogger.info(`Attempting to recover worker ${name} (attempt ${errorCount}/${this.maxRetries})`);
 
             // Wait a bit before restarting to avoid rapid restart loops
             setTimeout(() => {
@@ -207,11 +209,11 @@ export class WorkerManager {
                     this.status.set(name, WorkerStatus.IDLE);
                     this.startWorker(name);
 
-                    logger.info(`Worker ${name} recovered after error`);
+                    workerLogger.info(`Worker ${name} recovered after error`);
                 }
             }, this.restartTimeout);
         } else {
-            logger.error(`Worker ${name} has failed too many times (${errorCount}), not attempting further recovery`);
+            workerLogger.error(`Worker ${name} has failed too many times (${errorCount}), not attempting further recovery`);
             // Could terminate or reset the worker here if needed
         }
     }
@@ -264,7 +266,7 @@ export class WorkerManager {
             case WorkerMessageType.START_FAILED:
                 logger.error(`[Worker ${name}] [START FAILED] ${message.data}`);
                 // Startup failed, terminate worker without attempting recovery
-                logger.warn(`Agent ${name} failed to start, terminating without retry`);
+                workerLogger.warn(`Agent ${name} failed to start, terminating without retry`);
                 this.terminateWorker(name);
                 break;
 
@@ -298,14 +300,14 @@ export class WorkerManager {
                 type: WorkerMessageType.START,
             });
             this.status.set(name, WorkerStatus.RUNNING);
-            logger.info(`Worker ${name} started`);
+            workerLogger.info(`Worker ${name} started`);
             return true;
         }
 
         if (!worker) {
-            logger.error(`Cannot start non-existent worker: ${name}`);
+            workerLogger.error(`Cannot start non-existent worker: ${name}`);
         } else {
-            logger.warn(`Cannot start worker ${name} in status: ${status}`);
+            workerLogger.warn(`Cannot start worker ${name} in status: ${status}`);
         }
 
         return false;
@@ -323,7 +325,7 @@ export class WorkerManager {
                 type: WorkerMessageType.STOP,
             });
             this.status.set(name, WorkerStatus.IDLE);
-            logger.info(`Worker ${name} stopped`);
+            workerLogger.info(`Worker ${name} stopped`);
             return true;
         }
         return false;
@@ -342,10 +344,10 @@ export class WorkerManager {
                 this.workers.delete(name);
                 this.status.set(name, WorkerStatus.TERMINATED);
                 this.errorCounts.delete(name);
-                logger.info(`Worker ${name} terminated`);
+                workerLogger.info(`Worker ${name} terminated`);
                 return true;
             } catch (error) {
-                logger.error(`Error terminating worker ${name}: ${error}`);
+                workerLogger.error(`Error terminating worker ${name}: ${error}`);
                 this.status.set(name, WorkerStatus.ERROR);
                 return false;
             }
@@ -364,7 +366,7 @@ export class WorkerManager {
         if (!config && this.workers.has(name)) {
             // Implementation note: In reality, we would need to store workers' configs separately
             // This is a placeholder for demonstration purposes
-            logger.warn(`Restarting worker ${name} without configuration`);
+            workerLogger.warn(`Restarting worker ${name} without configuration`);
         }
 
         if (this.terminateWorker(name)) {
@@ -376,7 +378,7 @@ export class WorkerManager {
                 this.createWorker(name, config);
                 return this.startWorker(name);
             } else {
-                logger.error(`Cannot restart worker ${name}: No configuration provided`);
+                workerLogger.error(`Cannot restart worker ${name}: No configuration provided`);
                 return false;
             }
         }
@@ -429,7 +431,7 @@ export class WorkerManager {
         }
 
         if (status === WorkerStatus.ERROR) {
-            logger.warn(`Cannot send task to worker ${name} in ERROR state`);
+            workerLogger.warn(`Cannot send task to worker ${name} in ERROR state`);
         }
 
         return false;

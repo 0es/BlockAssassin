@@ -8,6 +8,8 @@ import { Config } from "@/config.ts";
 import { ClientMessageEncryptor } from "@/utils/crypto.ts";
 import { GameReceivedMessage } from "@/game/index.ts";
 
+const wsLogger = logger.withPrefix("WebSocket");
+
 // WebSocket connection states
 enum ConnectionState {
     DISCONNECTED = "disconnected",
@@ -80,7 +82,7 @@ export class WebSocketClient {
             privateKeyPath,
         );
 
-        logger.info(`WebSocket client initialized with server URL: ${this.serverUrl}`);
+        wsLogger.info(`WebSocket client initialized with server URL: ${this.serverUrl}`);
     }
 
     // Get singleton instance
@@ -94,7 +96,7 @@ export class WebSocketClient {
     // Set authentication token
     public setAuthToken(token: string): void {
         this.authToken = token;
-        logger.info("Authentication token set");
+        wsLogger.info("Authentication token set");
     }
 
     // Connect to WebSocket server
@@ -106,18 +108,18 @@ export class WebSocketClient {
         ];
 
         if (invalidStates.includes(this.state)) {
-            logger.warn(`Cannot connect while in ${this.state} state`);
+            wsLogger.warn(`Cannot connect while in ${this.state} state`);
             return false;
         }
 
         if (!this.authToken) {
-            logger.error("Cannot connect: No authentication token provided");
+            wsLogger.error("Cannot connect: No authentication token provided");
             return false;
         }
 
         try {
             this.state = ConnectionState.CONNECTING;
-            logger.info(`Connecting to WebSocket server: ${this.serverUrl}`);
+            wsLogger.info(`Connecting to WebSocket server: ${this.serverUrl}`);
 
             // Create WebSocket connection
             this.socket = new WebSocket(this.serverUrl, undefined, { followRedirects: true });
@@ -131,7 +133,7 @@ export class WebSocketClient {
             return true;
         } catch (error) {
             this.state = ConnectionState.ERROR;
-            logger.error("Failed to connect to WebSocket server", error as Error);
+            wsLogger.error("Failed to connect to WebSocket server", error as Error);
             this.triggerErrorHandlers(error as Error);
             return false;
         }
@@ -143,7 +145,7 @@ export class WebSocketClient {
             return;
         }
 
-        logger.info(`Disconnecting from WebSocket server: ${reason}`);
+        wsLogger.info(`Disconnecting from WebSocket server: ${reason}`);
 
         this.clearTimers();
 
@@ -151,7 +153,7 @@ export class WebSocketClient {
             try {
                 this.socket.close(WebSocketCloseCode.NORMAL_CLOSURE, reason);
             } catch (error) {
-                logger.error("Error while closing WebSocket connection", error as Error);
+                wsLogger.error("Error while closing WebSocket connection", error as Error);
             }
             this.socket = null;
         }
@@ -174,7 +176,7 @@ export class WebSocketClient {
 
     // Handle WebSocket open event
     private handleOpen(): void {
-        logger.info("WebSocket connection established");
+        wsLogger.info("WebSocket connection established");
         this.state = ConnectionState.AUTHENTICATING;
         this.reconnectAttempts = 0;
         this.authenticate();
@@ -200,9 +202,9 @@ export class WebSocketClient {
             };
 
             await this.send(authMessage);
-            logger.info("Authentication message sent with client info");
+            wsLogger.info("Authentication message sent with client info");
         } catch (error) {
-            logger.error("Failed to send authentication message", error as Error);
+            wsLogger.error("Failed to send authentication message", error as Error);
             this.disconnect("Authentication error");
         }
     }
@@ -214,7 +216,7 @@ export class WebSocketClient {
 
             // Log received message (truncated for large messages)
             const truncatedData = data.length > 100 ? data.substring(0, 100) + "..." : data;
-            logger.debug(`Received WebSocket data: ${truncatedData}`);
+            wsLogger.debug(`Received WebSocket data: ${truncatedData}`);
 
             // Update last communication time
             this.lastPingTime = Date.now();
@@ -225,7 +227,7 @@ export class WebSocketClient {
                 await this.handleDataMessage(data);
             }
         } catch (error) {
-            logger.error("Error handling WebSocket message", error as Error);
+            wsLogger.error("Error handling WebSocket message", error as Error);
         }
     }
 
@@ -236,18 +238,18 @@ export class WebSocketClient {
             const decryptedData = await this.encryptor.decrypt(data);
             const message = JSON.parse(decryptedData);
 
-            logger.debug(`Decrypted message: ${JSON.stringify(message)}`);
+            wsLogger.debug(`Decrypted message: ${JSON.stringify(message)}`);
 
             if (message.type === "welcome") {
                 this.state = ConnectionState.AUTHENTICATED;
                 this.clientId = message.data.clientId;
 
-                logger.info(`Authentication successful, client ID: ${this.clientId}`);
+                wsLogger.info(`Authentication successful, client ID: ${this.clientId}`);
                 this.startPingInterval();
                 this.triggerConnectionHandlers();
             }
         } catch (error) {
-            logger.error("Failed to process authentication response", error as Error);
+            wsLogger.error("Failed to process authentication response", error as Error);
         }
     }
 
@@ -261,7 +263,7 @@ export class WebSocketClient {
             const message = JSON.parse(decryptedData);
 
             // Log message type
-            logger.debug(`Received message type: ${message.type || "unknown"}`);
+            wsLogger.debug(`Received message type: ${message.type || "unknown"}`);
 
             // Handle ping & pong messages
             if (message.type === "ping") {
@@ -274,7 +276,7 @@ export class WebSocketClient {
             // Notify all message handlers for other message types
             this.triggerMessageHandlers(message);
         } catch (error) {
-            logger.error("Message processing error", error as Error);
+            wsLogger.error("Message processing error", error as Error);
         }
     }
 
@@ -286,7 +288,7 @@ export class WebSocketClient {
                 timestamp: Date.now(),
             });
         } catch (error) {
-            logger.error("Failed to send pong", error as Error);
+            wsLogger.error("Failed to send pong", error as Error);
             // Attempt reconnect on failure
             this.reconnect();
         }
@@ -302,7 +304,7 @@ export class WebSocketClient {
 
             // Reconnect if no message received for 2 minutes
             if (now - this.lastPingTime > 120000) {
-                logger.warn("WebSocket connection timeout, reconnecting");
+                wsLogger.warn("WebSocket connection timeout, reconnecting");
                 this.reconnect();
                 return;
             }
@@ -312,7 +314,7 @@ export class WebSocketClient {
                 type: "ping",
                 timestamp: now,
             }).catch((error) => {
-                logger.error("Failed to send ping", error as Error);
+                wsLogger.error("Failed to send ping", error as Error);
                 // Trigger reconnect on failure
                 this.reconnect();
             });
@@ -324,7 +326,7 @@ export class WebSocketClient {
         const errorMessage = (event as ErrorEvent).message || "Unknown WebSocket error";
         const error = new Error(errorMessage);
 
-        logger.error(`WebSocket error: ${errorMessage}`);
+        wsLogger.error(`WebSocket error: ${errorMessage}`);
         this.state = ConnectionState.ERROR;
         this.triggerErrorHandlers(error);
         this.reconnect();
@@ -332,7 +334,7 @@ export class WebSocketClient {
 
     // Handle WebSocket close event
     private handleClose(event: CloseEvent): void {
-        logger.info(`WebSocket connection closed: ${event.code} - ${event.reason}`);
+        wsLogger.info(`WebSocket connection closed: ${event.code} - ${event.reason}`);
 
         this.clearTimers();
         this.state = ConnectionState.DISCONNECTED;
@@ -343,7 +345,7 @@ export class WebSocketClient {
             event.code === WebSocketCloseCode.NORMAL_CLOSURE ||
             event.code === WebSocketCloseCode.AUTH_ERROR
         ) {
-            logger.info(
+            wsLogger.info(
                 `No reconnect attempt: ${event.code === WebSocketCloseCode.NORMAL_CLOSURE ? "Normal closure" : "Authentication error"}`,
             );
             return;
@@ -364,7 +366,7 @@ export class WebSocketClient {
         this.reconnectAttempts++;
 
         if (this.reconnectAttempts > this.maxReconnectAttempts) {
-            logger.error("Maximum reconnection attempts reached");
+            wsLogger.error("Maximum reconnection attempts reached");
             this.state = ConnectionState.DISCONNECTED;
             return;
         }
@@ -372,7 +374,7 @@ export class WebSocketClient {
         // Calculate exponential backoff with jitter
         const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts) + Math.random() * 1000, 30000);
 
-        logger.info(
+        wsLogger.info(
             `Reconnecting in ${Math.round(delay / 1000)} seconds (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
         );
 
@@ -383,7 +385,7 @@ export class WebSocketClient {
     public send(message: any): Promise<void> {
         // Log message type before sending
         const msgType = typeof message === "object" && message.type ? message.type : "unknown";
-        logger.debug(`Sending message type: ${msgType}`);
+        wsLogger.debug(`Sending message type: ${msgType}`);
 
         // Convert message to JSON string
         const jsonMessage = JSON.stringify(message);
@@ -399,18 +401,18 @@ export class WebSocketClient {
         try {
             // Log raw message for debugging (only first 100 chars)
             const truncatedMsg = message.length > 100 ? message.substring(0, 100) + "..." : message;
-            logger.debug(`Sending raw data: ${truncatedMsg}`);
+            wsLogger.debug(`Sending raw data: ${truncatedMsg}`);
 
             // Encrypt message
             const encryptedMessage = await this.encryptor.encrypt(message);
 
             // Log encrypted size
-            logger.debug(`Encrypted message size: ${encryptedMessage.length} bytes`);
+            wsLogger.debug(`Encrypted message size: ${encryptedMessage.length} bytes`);
 
             // Send via WebSocket
             this.socket.send(encryptedMessage);
         } catch (error) {
-            logger.error("Failed to send message", error as Error);
+            wsLogger.error("Failed to send message", error as Error);
             throw error;
         }
     }
@@ -441,7 +443,7 @@ export class WebSocketClient {
             try {
                 handler(message);
             } catch (error) {
-                logger.error("Error in message handler", error as Error);
+                wsLogger.error("Error in message handler", error as Error);
             }
         }
     }
@@ -452,7 +454,7 @@ export class WebSocketClient {
             try {
                 handler();
             } catch (error) {
-                logger.error("Error in connection handler", error as Error);
+                wsLogger.error("Error in connection handler", error as Error);
             }
         }
     }
@@ -463,7 +465,7 @@ export class WebSocketClient {
             try {
                 handler(error);
             } catch (handlerError) {
-                logger.error("Error in error handler", handlerError as Error);
+                wsLogger.error("Error in error handler", handlerError as Error);
             }
         }
     }
@@ -474,7 +476,7 @@ export class WebSocketClient {
             try {
                 handler(code, reason);
             } catch (error) {
-                logger.error("Error in close handler", error as Error);
+                wsLogger.error("Error in close handler", error as Error);
             }
         }
     }

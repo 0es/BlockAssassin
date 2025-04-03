@@ -10,16 +10,19 @@ export enum LogLevel {
 }
 
 /**
- * Logger singleton class for application logging
+ * Logger class for application logging
  */
 export class Logger {
     private static instance: Logger;
     private level: LogLevel = LogLevel.INFO;
+    private prefix: string = "";
 
     /**
-     * Private constructor to prevent direct construction calls with the `new` operator
+     * Constructor for Logger
      */
-    private constructor() {}
+    private constructor(prefix: string = "") {
+        this.prefix = prefix;
+    }
 
     /**
      * Get the singleton instance of Logger
@@ -29,6 +32,15 @@ export class Logger {
             Logger.instance = new Logger();
         }
         return Logger.instance;
+    }
+
+    /**
+     * Create a new logger with a prefix
+     */
+    public withPrefix(prefix: string): Logger {
+        const newLogger = new Logger(prefix);
+        newLogger.level = this.level;
+        return newLogger;
     }
 
     /**
@@ -58,7 +70,7 @@ export class Logger {
      */
     private format(level: string, message: string): string {
         const timestamp = new Date().toISOString();
-        return `[${timestamp}] [${level}] ${message}`;
+        return this.prefix ? `[${timestamp}] [${level}] [${this.prefix}] ${message}` : `[${timestamp}] [${level}] ${message}`;
     }
 
     /**
